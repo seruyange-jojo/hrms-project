@@ -1,0 +1,30 @@
+<div class="toolbar">
+  <h2>Employees</h2>
+  <div>
+    <button class="btn">Import</button>
+    <button class="btn outline">Export</button>
+  </div>
+</div>
+<div class="grid cols-2">
+  <div class="card">
+    <h3>New Employee</h3>
+    <form id="employeeForm" class="grid">
+      <label class="label" for="empName">Full Name</label>
+      <input id="empName" name="name" class="input" placeholder="Jane Doe" required />
+      <label class="label" for="empEmail">Email</label>
+      <input id="empEmail" name="email" type="email" class="input" placeholder="jane@company.com" required />
+      <label class="label" for="empDept">Department</label>
+      <input id="empDept" name="department" class="input" placeholder="Engineering" />
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Directory</h3>
+    <table class="table">
+      <thead><tr><th>Name</th><th>Email</th><th>Department</th></tr></thead>
+      <tbody>
+        <tr><td>John Smith</td><td>john@company.com</td><td>HR</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

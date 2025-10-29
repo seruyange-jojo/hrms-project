@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: hrms_postgres
+    environment:
+      POSTGRES_DB: hrms_db
+      POSTGRES_USER: hrms_user
+      POSTGRES_PASSWORD: hrms_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hrms_user -d hrms_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hrms_network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hrms_backend
+    environment:
+      PORT: "8080"
+      GIN_MODE: "debug"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_USER: "hrms_user"
+      DB_PASSWORD: "hrms_password"
+      DB_NAME: "hrms_db"
+      DB_SSLMODE: "disable"
+      JWT_SECRET: "your-super-secret-jwt-key-change-in-production"
+      JWT_EXPIRES_IN: "24h"
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - hrms_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+
+networks:
+  hrms_network:
+    driver: bridge

@@ -1,0 +1,120 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: hrms
+          POSTGRES_USER: hrms
+          POSTGRES_PASSWORD: hrms
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U hrms" \
+          --health-interval=10s \
+          --health-timeout=5s \
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.22' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Backend deps
+        run: go mod download
+        working-directory: backend
+
+      - name: Lint (golangci-lint)
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+          working-directory: backend
+
+      - name: Vet
+        run: go vet ./...
+        working-directory: backend
+
+      - name: Test (unit)
+        run: go test ./... -coverprofile=coverage.out
+        working-directory: backend
+
+      - name: Frontend deps
+        run: npm ci
+        working-directory: frontend
+
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+
+  docker:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hrms-api:${{ github.sha }}
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hrms-web:${{ github.sha }}
+
+  security-scan:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trivy image scan (API)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/hrms-api:${{ github.sha }}
+          format: 'table'
+          vuln-type: 'os,library'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+      - name: Trivy image scan (Web)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/hrms-web:${{ github.sha }}
+          format: 'table'
+          vuln-type: 'os,library'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+      - name: Gosec
+        uses: securego/gosec@master
+        with:
+          args: ./backend/...
+      - name: Dependabot metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy (placeholder)
+        run: echo "Deploy to staging here (e.g., kubectl apply or docker stack deploy)"
