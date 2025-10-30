@@ -26,10 +26,11 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {/* HR-only routes */}
       <Route
         path="/employees"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['hr', 'admin']}>
             <Layout>
               <Employees />
             </Layout>
@@ -39,7 +40,7 @@ const AppRoutes = () => {
       <Route
         path="/departments"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['hr', 'admin']}>
             <Layout>
               <Departments />
             </Layout>
@@ -49,7 +50,7 @@ const AppRoutes = () => {
       <Route
         path="/attendance"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['hr', 'admin']}>
             <Layout>
               <Attendance />
             </Layout>
@@ -59,9 +60,93 @@ const AppRoutes = () => {
       <Route
         path="/leaves"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['hr', 'admin']}>
             <Layout>
               <Leaves />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll"
+        element={
+          <ProtectedRoute allowedRoles={['hr', 'admin']}>
+            <Layout>
+              <div>Payroll Management (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Manager routes */}
+      <Route
+        path="/my-team"
+        element={
+          <ProtectedRoute allowedRoles={['manager']}>
+            <Layout>
+              <div>My Team Management (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team-attendance"
+        element={
+          <ProtectedRoute allowedRoles={['manager']}>
+            <Layout>
+              <div>Team Attendance Report (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team-leaves"
+        element={
+          <ProtectedRoute allowedRoles={['manager']}>
+            <Layout>
+              <div>Team Leave Requests (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* Employee routes */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <Layout>
+              <div>My Profile (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-attendance"
+        element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <Layout>
+              <div>My Attendance (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-leaves"
+        element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <Layout>
+              <div>My Leave Requests (Coming Soon)</div>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-payroll"
+        element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <Layout>
+              <div>My Payroll (Coming Soon)</div>
             </Layout>
           </ProtectedRoute>
         }
