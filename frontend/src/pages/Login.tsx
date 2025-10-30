@@ -86,8 +86,9 @@ const Login = () => {
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
           <p className="text-sm text-blue-800">
             <strong>Demo Credentials:</strong><br />
-            Email: admin@hrsystem.com<br />
-            Password: admin123
+            <strong>Admin/HR:</strong> admin@hrms.com / admin123<br />
+            <strong>Manager:</strong> manager@hrms.com / manager123<br />
+            <strong>Employee:</strong> employee@hrms.com / employee123
           </p>
         </div>
       </div>

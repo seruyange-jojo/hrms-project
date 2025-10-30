@@ -2,7 +2,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'hr' | 'employee';
+  role: 'admin' | 'hr' | 'manager' | 'employee';
+  firstName?: string;
+  lastName?: string;
+  isActive?: boolean;
+  employeeId?: number;
+  employee?: Employee;
 }
 
 export interface Employee {
@@ -43,10 +48,41 @@ export interface LeaveRequest {
   leaveType: 'sick' | 'vacation' | 'personal' | 'other';
   startDate: string;
   endDate: string;
+  days: number;
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
-  approverComments?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  comments?: string;
+}
+
+export interface PayrollRecord {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  payPeriodStart: string;
+  payPeriodEnd: string;
+  basicSalary: number;
+  allowances: number;
+  deductions: number;
+  overtime: number;
+  grossPay: number;
+  tax: number;
+  netPay: number;
+  status: 'draft' | 'processed' | 'paid';
+  processedAt?: string;
+  paidAt?: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  isRead: boolean;
+  createdAt: string;
 }
 
 export interface ApiResponse<T> {
