@@ -10,6 +10,42 @@ import (
 	"gorm.io/gorm"
 )
 
+// UserResponse represents the user data structure expected by frontend
+type UserResponse struct {
+	ID         string            `json:"id"`
+	Email      string            `json:"email"`
+	Name       string            `json:"name"`
+	Role       string            `json:"role"`
+	FirstName  string            `json:"firstName,omitempty"`
+	LastName   string            `json:"lastName,omitempty"`
+	IsActive   bool              `json:"isActive"`
+	EmployeeID *int              `json:"employeeId,omitempty"`
+	Employee   *EmployeeResponse `json:"employee,omitempty"`
+}
+
+// Helper function to convert model to response format
+func (uc *UserController) transformUserResponse(user models.User) UserResponse {
+	name := user.FirstName + " " + user.LastName
+
+	var employeeID *int
+	if user.EmployeeID != nil {
+		id := int(*user.EmployeeID)
+		employeeID = &id
+	}
+
+	return UserResponse{
+		ID:         strconv.Itoa(int(user.Model.ID)),
+		Email:      user.Email,
+		Name:       name,
+		Role:       user.Role,
+		FirstName:  user.FirstName,
+		LastName:   user.LastName,
+		IsActive:   user.IsActive,
+		EmployeeID: employeeID,
+		// Employee field would need separate handling if needed
+	}
+}
+
 type UserController struct {
 	db *gorm.DB
 }
@@ -31,8 +67,8 @@ func (uc *UserController) GetCurrentUser(c *gin.Context) {
 		return
 	}
 
-	user.Password = "" // Remove password from response
-	c.JSON(http.StatusOK, user)
+	response := uc.transformUserResponse(user)
+	c.JSON(http.StatusOK, response)
 }
 
 func (uc *UserController) UpdateCurrentUser(c *gin.Context) {
@@ -91,12 +127,13 @@ func (uc *UserController) GetUsers(c *gin.Context) {
 		return
 	}
 
-	// Remove passwords from response
-	for i := range users {
-		users[i].Password = ""
+	// Transform to frontend expected format
+	var response []UserResponse
+	for _, user := range users {
+		response = append(response, uc.transformUserResponse(user))
 	}
 
-	c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, response)
 }
 
 func (uc *UserController) GetUser(c *gin.Context) {

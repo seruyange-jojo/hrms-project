@@ -9,6 +9,44 @@ import (
 	"gorm.io/gorm"
 )
 
+// EmployeeResponse represents the employee data structure expected by frontend
+type EmployeeResponse struct {
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	Email      string  `json:"email"`
+	Phone      string  `json:"phone"`
+	Department string  `json:"department"`
+	Position   string  `json:"position"`
+	JoinDate   string  `json:"joinDate"`
+	Status     string  `json:"status"`
+	Salary     float64 `json:"salary"`
+}
+
+// Helper function to convert model to response format
+func (ec *EmployeeController) transformEmployeeResponse(emp models.Employee) EmployeeResponse {
+	departmentName := ""
+	if emp.Department.Name != "" {
+		departmentName = emp.Department.Name
+	}
+
+	joinDate := ""
+	if !emp.HireDate.IsZero() {
+		joinDate = emp.HireDate.Format("2006-01-02")
+	}
+
+	return EmployeeResponse{
+		ID:         strconv.Itoa(int(emp.Model.ID)),
+		Name:       emp.FirstName + " " + emp.LastName,
+		Email:      emp.Email,
+		Phone:      emp.Phone,
+		Department: departmentName,
+		Position:   emp.Position,
+		JoinDate:   joinDate,
+		Status:     emp.Status,
+		Salary:     emp.Salary,
+	}
+}
+
 type EmployeeController struct {
 	db *gorm.DB
 }
@@ -24,7 +62,13 @@ func (ec *EmployeeController) GetEmployees(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, employees)
+	// Transform to frontend expected format
+	var response []EmployeeResponse
+	for _, emp := range employees {
+		response = append(response, ec.transformEmployeeResponse(emp))
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (ec *EmployeeController) GetEmployee(c *gin.Context) {
@@ -40,7 +84,8 @@ func (ec *EmployeeController) GetEmployee(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, employee)
+	response := ec.transformEmployeeResponse(employee)
+	c.JSON(http.StatusOK, response)
 }
 
 func (ec *EmployeeController) CreateEmployee(c *gin.Context) {

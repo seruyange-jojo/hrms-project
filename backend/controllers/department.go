@@ -9,6 +9,33 @@ import (
 	"gorm.io/gorm"
 )
 
+// DepartmentResponse represents the department data structure expected by frontend
+type DepartmentResponse struct {
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	HeadOfDepartment string `json:"headOfDepartment,omitempty"`
+	EmployeeCount    int    `json:"employeeCount,omitempty"`
+}
+
+// Helper function to convert model to response format
+func (dc *DepartmentController) transformDepartmentResponse(dept models.Department) DepartmentResponse {
+	headOfDepartment := ""
+	if dept.Manager != nil {
+		headOfDepartment = dept.Manager.FirstName + " " + dept.Manager.LastName
+	}
+
+	employeeCount := len(dept.Employees)
+
+	return DepartmentResponse{
+		ID:               strconv.Itoa(int(dept.Model.ID)),
+		Name:             dept.Name,
+		Description:      dept.Description,
+		HeadOfDepartment: headOfDepartment,
+		EmployeeCount:    employeeCount,
+	}
+}
+
 type DepartmentController struct {
 	db *gorm.DB
 }
@@ -24,7 +51,13 @@ func (dc *DepartmentController) GetDepartments(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, departments)
+	// Transform to frontend expected format
+	var response []DepartmentResponse
+	for _, dept := range departments {
+		response = append(response, dc.transformDepartmentResponse(dept))
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func (dc *DepartmentController) GetDepartment(c *gin.Context) {
@@ -40,7 +73,8 @@ func (dc *DepartmentController) GetDepartment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, department)
+	response := dc.transformDepartmentResponse(department)
+	c.JSON(http.StatusOK, response)
 }
 
 func (dc *DepartmentController) CreateDepartment(c *gin.Context) {
