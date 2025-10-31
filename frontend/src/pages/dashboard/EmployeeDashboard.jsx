@@ -64,24 +64,39 @@ const EmployeeDashboard = () => {
         );
         
         if (!employeeProfile) {
-          toast.error('Employee profile not found');
+          console.error('Employee profile not found for user:', user.email);
+          toast.error('Employee profile not found. Please contact admin.');
+          setLoading(false);
           return;
         }
 
         setMyProfile(employeeProfile);
 
-        // Filter data for current employee only
-        const myAttendance = attendance.filter(att => 
-          att.employeeId === employeeProfile.id || att.employeeId === employeeProfile.ID
-        );
+        // Filter data for current employee ONLY - strict filtering
+        const employeeId = employeeProfile.id || employeeProfile.ID;
+        const employeeEmail = employeeProfile.email;
         
-        const myLeaves = leaves.filter(leave => 
-          leave.employeeId === employeeProfile.id || leave.employeeId === employeeProfile.ID
-        );
+        const myAttendance = attendance.filter(att => {
+          return att.employeeId === employeeId || 
+                 att.employeeId === String(employeeId) ||
+                 att.employee?.email === employeeEmail;
+        });
         
-        const myPayroll = payrollRecords.filter(payroll => 
-          payroll.employeeId === employeeProfile.id || payroll.employeeId === employeeProfile.ID
-        );
+        const myLeaves = leaves.filter(leave => {
+          return leave.employeeId === employeeId || 
+                 leave.employeeId === String(employeeId) ||
+                 leave.employee?.email === employeeEmail;
+        });
+        
+        const myPayroll = payrollRecords.filter(payroll => {
+          return payroll.employeeId === employeeId || 
+                 payroll.employeeId === String(employeeId) ||
+                 payroll.employee?.email === employeeEmail;
+        });
+
+        // Log filtering results for debugging
+        console.log(`Employee ${employeeProfile.firstName} ${employeeProfile.lastName} (ID: ${employeeId})`);
+        console.log(`Filtered data: ${myAttendance.length} attendance, ${myLeaves.length} leaves, ${myPayroll.length} payroll records`);
 
         // Calculate employee-specific stats
         const currentMonth = new Date().getMonth();
