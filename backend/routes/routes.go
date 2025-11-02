@@ -74,6 +74,8 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 		{
 			attendance.GET("/", middleware.RequireEmployee(), attendanceController.GetAttendance)                      // All roles with filtered data
 			attendance.POST("/", middleware.RequireEmployee(), attendanceController.CreateAttendance)                  // Employees log own, HR can create any
+			attendance.POST("/checkin", middleware.RequireEmployee(), attendanceController.CheckIn)                    // Employee check-in
+			attendance.POST("/checkout", middleware.RequireEmployee(), attendanceController.CheckOut)                  // Employee check-out
 			attendance.GET("/report", middleware.RequireManager(), attendanceController.GetDepartmentAttendanceReport) // Managers get department report
 			attendance.PUT("/:id", middleware.RequireHR(), attendanceController.UpdateAttendance)                      // HR only
 			attendance.DELETE("/:id", middleware.RequireHR(), attendanceController.DeleteAttendance)                   // HR only
