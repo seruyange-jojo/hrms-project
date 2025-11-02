@@ -158,6 +158,16 @@ export const attendanceAPI = {
     return response.data;
   },
   
+  checkIn: async () => {
+    const response = await apiClient.post('/attendance/checkin');
+    return response.data;
+  },
+  
+  checkOut: async () => {
+    const response = await apiClient.post('/attendance/checkout');
+    return response.data;
+  },
+  
   getAttendanceReport: async () => {
     const response = await apiClient.get('/attendance/report');
     return response.data;
@@ -191,8 +201,19 @@ export const leaveAPI = {
     return response.data;
   },
   
-  approveLeaveRequest: async (id) => {
-    const response = await apiClient.post(`/leaves/${id}/approve`);
+  approveLeaveRequest: async (id, status, comments = '') => {
+    const response = await apiClient.post(`/leaves/${id}/approve`, { 
+      status, 
+      comments 
+    });
+    return response.data;
+  },
+  
+  rejectLeaveRequest: async (id, comments = '') => {
+    const response = await apiClient.post(`/leaves/${id}/approve`, { 
+      status: 'rejected', 
+      comments 
+    });
     return response.data;
   },
   
