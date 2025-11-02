@@ -14,6 +14,8 @@ import Dashboard from './pages/Dashboard';
 import MyPayroll from './pages/MyPayroll';
 import LeaveRequestNew from './pages/LeaveRequestNew';
 import Profile from './pages/Profile';
+import Employees from './pages/Employees';
+import Departments from './pages/Departments';
 
 function App() {
   return (
@@ -58,32 +60,18 @@ function App() {
             
             {/* Employees routes */}
             <Route path="/employees" element={
-              <ProtectedRoute requiredRole="manager">
+              <ProtectedRoute requiredRole="admin">
                 <Layout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-4">Employees</h1>
-                    <div className="card bg-base-100 shadow-sm">
-                      <div className="card-body">
-                        <p>Employee management coming soon...</p>
-                      </div>
-                    </div>
-                  </div>
+                  <Employees />
                 </Layout>
               </ProtectedRoute>
             } />
             
             {/* Departments routes */}
             <Route path="/departments" element={
-              <ProtectedRoute requiredRole="manager">
+              <ProtectedRoute requiredRole="admin">
                 <Layout>
-                  <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-4">Departments</h1>
-                    <div className="card bg-base-100 shadow-sm">
-                      <div className="card-body">
-                        <p>Department management coming soon...</p>
-                      </div>
-                    </div>
-                  </div>
+                  <Departments />
                 </Layout>
               </ProtectedRoute>
             } />

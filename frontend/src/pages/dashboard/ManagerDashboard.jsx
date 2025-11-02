@@ -32,6 +32,9 @@ import { formatDate, getStatusColor } from '../../utils/helpers';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { StatsCard, CardWithHeader } from '../../components/Card';
 import Button from '../../components/Button';
+import TeamMemberDetailModal from '../../components/TeamMemberDetailModal';
+import LeaveRequestDetailModal from '../../components/LeaveRequestDetailModal';
+import TaskAssignmentModal from '../../components/TaskAssignmentModal';
 import toast from 'react-hot-toast';
 
 const ManagerDashboard = () => {
@@ -57,6 +60,19 @@ const ManagerDashboard = () => {
   const [myDepartment, setMyDepartment] = useState(null);
   const [selectedTab, setSelectedTab] = useState('overview'); // For tabbed sections
   const [announcementText, setAnnouncementText] = useState('');
+
+  // Modal states
+  const [teamMemberModal, setTeamMemberModal] = useState({
+    isOpen: false,
+    employeeId: null
+  });
+  const [leaveDetailModal, setLeaveDetailModal] = useState({
+    isOpen: false,
+    leave: null
+  });
+  const [taskAssignmentModal, setTaskAssignmentModal] = useState({
+    isOpen: false
+  });
 
   // Set page title for clarity
   useEffect(() => {
@@ -585,11 +601,11 @@ const ManagerDashboard = () => {
     }
   }, [user]);
 
-  const handleApproveLeave = async (leaveId) => {
+  const handleApproveLeave = async (leaveId, comment) => {
     try {
-      const response = await leaveAPI.approveLeaveRequest(leaveId, 'approved', 'Approved by manager');
+      const response = await leaveAPI.approveLeaveRequest(leaveId, 'approved', comment || 'Approved by manager');
       
-      if (response.success) {
+      if (response.success || response.data?.success) {
         toast.success('Leave request approved successfully');
         
         // Update local state to remove the approved request
@@ -597,6 +613,13 @@ const ManagerDashboard = () => {
           ...prev,
           teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.id !== leaveId && leave.ID !== leaveId)
         }));
+        
+        // Refresh data
+        if (user?.id) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
     } catch (error) {
       console.error('Error approving leave:', error);
@@ -606,11 +629,11 @@ const ManagerDashboard = () => {
     }
   };
 
-  const handleRejectLeave = async (leaveId) => {
+  const handleRejectLeave = async (leaveId, comment) => {
     try {
-      const response = await leaveAPI.rejectLeaveRequest(leaveId, 'Rejected by manager');
+      const response = await leaveAPI.rejectLeaveRequest(leaveId, comment || 'Rejected by manager');
       
-      if (response.data.success) {
+      if (response.success || response.data?.success) {
         toast.success('Leave request rejected');
         
         // Update local state to remove the rejected request
@@ -618,6 +641,13 @@ const ManagerDashboard = () => {
           ...prev,
           teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.id !== leaveId && leave.ID !== leaveId)
         }));
+        
+        // Refresh data
+        if (user?.id) {
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        }
       }
     } catch (error) {
       console.error('Error rejecting leave:', error);
@@ -636,11 +666,46 @@ const ManagerDashboard = () => {
     // In a real app, this would POST to an API
     toast.success('Announcement posted to team');
     setAnnouncementText('');
+    
+    // Add to announcements list
+    const newAnnouncement = {
+      id: Date.now(),
+      title: 'Team Update',
+      message: announcementText,
+      postedBy: `${user.firstName} ${user.lastName}`,
+      postedDate: new Date().toISOString().split('T')[0],
+      priority: 'normal'
+    };
+    
+    setRecentData(prev => ({
+      ...prev,
+      teamAnnouncements: [newAnnouncement, ...prev.teamAnnouncements]
+    }));
   };
 
-  const handleAssignTask = (taskId) => {
-    // In a real app, this would open a modal or navigate to task assignment
-    toast.success('Task assignment feature coming soon');
+  const handleViewTeamMember = (employeeId) => {
+    setTeamMemberModal({
+      isOpen: true,
+      employeeId: employeeId
+    });
+  };
+
+  const handleViewLeaveRequest = (leave) => {
+    setLeaveDetailModal({
+      isOpen: true,
+      leave: leave
+    });
+  };
+
+  const handleOpenTaskAssignment = () => {
+    setTaskAssignmentModal({
+      isOpen: true
+    });
+  };
+
+  const handleGenerateReport = (reportType) => {
+    toast.success(`Generating ${reportType} report...`);
+    // In a real app, this would call an API to generate and download the report
   };
 
   const getPriorityColor = (priority) => {
@@ -688,11 +753,21 @@ const ManagerDashboard = () => {
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex gap-2">
-            <Button variant="secondary" size="small" className="btn-sm">
+            <Button 
+              variant="secondary" 
+              size="small" 
+              className="btn-sm"
+              onClick={handleOpenTaskAssignment}
+            >
               <Users className="w-4 h-4 mr-2" />
-              View Team
+              Assign Task
             </Button>
-            <Button variant="outline" size="small" className="btn-sm">
+            <Button 
+              variant="outline" 
+              size="small" 
+              className="btn-sm"
+              onClick={() => window.scrollTo({ top: document.getElementById('leave-section')?.offsetTop || 800, behavior: 'smooth' })}
+            >
               <Calendar className="w-4 h-4 mr-2" />
               Leave Requests
             </Button>
@@ -962,7 +1037,16 @@ const ManagerDashboard = () => {
         {/* Active Tasks & Assignments */}
         <CardWithHeader
           title="Active Tasks & Assignments"
-          action={<Button variant="primary" size="small"><UserPlus className="w-4 h-4 mr-1" />Assign Task</Button>}
+          action={
+            <Button 
+              variant="primary" 
+              size="small"
+              onClick={handleOpenTaskAssignment}
+            >
+              <UserPlus className="w-4 h-4 mr-1" />
+              Assign Task
+            </Button>
+          }
           className="hover:shadow-lg transition-shadow duration-200"
         >
           <div className="space-y-3">
@@ -1146,7 +1230,12 @@ const ManagerDashboard = () => {
                     <div className={`badge ${member.status === 'active' ? 'badge-success' : 'badge-error'} badge-sm`}>
                       {member.status || 'active'}
                     </div>
-                    <Button variant="ghost" size="small" className="btn-xs">
+                    <Button 
+                      variant="ghost" 
+                      size="small" 
+                      className="btn-xs"
+                      onClick={() => handleViewTeamMember(member.id || member.ID)}
+                    >
                       View Details
                     </Button>
                   </div>
@@ -1164,7 +1253,7 @@ const ManagerDashboard = () => {
       </div>
 
       {/* Leave Approvals and Attendance Tracking */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div id="leave-section" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Leave Approvals - Approve/Reject Team Member Requests */}
         <CardWithHeader
           title="Leave Approvals"
@@ -1199,22 +1288,13 @@ const ManagerDashboard = () => {
                     </div>
                     <div className="flex flex-col gap-2">
                       <Button 
-                        variant="success" 
+                        variant="primary" 
                         size="small" 
                         className="btn-sm"
-                        onClick={() => handleApproveLeave(leave.ID)}
+                        onClick={() => handleViewLeaveRequest(leave)}
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button 
-                        variant="error" 
-                        size="small" 
-                        className="btn-sm"
-                        onClick={() => handleRejectLeave(leave.ID)}
-                      >
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        Reject
+                        <FileText className="w-4 h-4 mr-1" />
+                        Review
                       </Button>
                     </div>
                   </div>
@@ -1579,10 +1659,20 @@ const ManagerDashboard = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="small" className="btn-xs">
+                      <Button 
+                        variant="outline" 
+                        size="small" 
+                        className="btn-xs"
+                        onClick={() => handleGenerateReport(report.title)}
+                      >
                         View
                       </Button>
-                      <Button variant="primary" size="small" className="btn-xs">
+                      <Button 
+                        variant="primary" 
+                        size="small" 
+                        className="btn-xs"
+                        onClick={() => handleGenerateReport(report.title)}
+                      >
                         Generate
                       </Button>
                     </div>
@@ -1644,22 +1734,38 @@ const ManagerDashboard = () => {
             className="hover:shadow-lg transition-shadow duration-200"
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Button variant="primary" className="h-20 flex-col">
+              <Button 
+                variant="primary" 
+                className="h-20 flex-col"
+                onClick={() => handleGenerateReport('Team Summary')}
+              >
                 <Users className="w-6 h-6 mb-2" />
                 <span className="text-sm font-medium">Team Summary</span>
                 <span className="text-xs opacity-70">Overall team metrics</span>
               </Button>
-              <Button variant="secondary" className="h-20 flex-col">
+              <Button 
+                variant="secondary" 
+                className="h-20 flex-col"
+                onClick={() => handleGenerateReport('Attendance Report')}
+              >
                 <Clock className="w-6 h-6 mb-2" />
                 <span className="text-sm font-medium">Attendance Report</span>
                 <span className="text-xs opacity-70">Monthly attendance</span>
               </Button>
-              <Button variant="accent" className="h-20 flex-col">
+              <Button 
+                variant="accent" 
+                className="h-20 flex-col"
+                onClick={() => handleGenerateReport('Performance Report')}
+              >
                 <Activity className="w-6 h-6 mb-2" />
                 <span className="text-sm font-medium">Performance Report</span>
                 <span className="text-xs opacity-70">Team performance</span>
               </Button>
-              <Button variant="info" className="h-20 flex-col">
+              <Button 
+                variant="info" 
+                className="h-20 flex-col"
+                onClick={() => handleGenerateReport('Leave Summary')}
+              >
                 <Calendar className="w-6 h-6 mb-2" />
                 <span className="text-sm font-medium">Leave Summary</span>
                 <span className="text-xs opacity-70">Leave statistics</span>
@@ -1675,20 +1781,53 @@ const ManagerDashboard = () => {
         className="hover:shadow-lg transition-shadow duration-200"
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button variant="primary" className="h-16 flex-col">
+          <Button 
+            variant="primary" 
+            className="h-16 flex-col"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
             <Calendar className="w-5 h-5 mb-1" />
             <span className="text-sm">Review Leave Requests</span>
           </Button>
-          <Button variant="secondary" className="h-16 flex-col">
+          <Button 
+            variant="secondary" 
+            className="h-16 flex-col"
+            onClick={handleOpenTaskAssignment}
+          >
             <Users className="w-5 h-5 mb-1" />
-            <span className="text-sm">Team Overview</span>
+            <span className="text-sm">Assign Tasks</span>
           </Button>
-          <Button variant="accent" className="h-16 flex-col">
+          <Button 
+            variant="accent" 
+            className="h-16 flex-col"
+            onClick={() => handleGenerateReport('Team Performance')}
+          >
             <Activity className="w-5 h-5 mb-1" />
             <span className="text-sm">Performance Review</span>
           </Button>
         </div>
       </CardWithHeader>
+
+      {/* Modals */}
+      <TeamMemberDetailModal
+        isOpen={teamMemberModal.isOpen}
+        onClose={() => setTeamMemberModal({ isOpen: false, employeeId: null })}
+        employeeId={teamMemberModal.employeeId}
+      />
+
+      <LeaveRequestDetailModal
+        isOpen={leaveDetailModal.isOpen}
+        onClose={() => setLeaveDetailModal({ isOpen: false, leave: null })}
+        leave={leaveDetailModal.leave}
+        onApprove={handleApproveLeave}
+        onReject={handleRejectLeave}
+      />
+
+      <TaskAssignmentModal
+        isOpen={taskAssignmentModal.isOpen}
+        onClose={() => setTaskAssignmentModal({ isOpen: false })}
+        teamMembers={recentData.teamMembers || []}
+      />
     </div>
   );
 };
