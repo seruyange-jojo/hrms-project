@@ -11,22 +11,31 @@ import (
 
 // EmployeeResponse represents the employee data structure expected by frontend
 type EmployeeResponse struct {
-	ID         string  `json:"id"`
-	Name       string  `json:"name"`
-	Email      string  `json:"email"`
-	Phone      string  `json:"phone"`
-	Department string  `json:"department"`
-	Position   string  `json:"position"`
-	JoinDate   string  `json:"joinDate"`
-	Status     string  `json:"status"`
-	Salary     float64 `json:"salary"`
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	FirstName    string  `json:"firstName"`
+	LastName     string  `json:"lastName"`
+	Email        string  `json:"email"`
+	Phone        string  `json:"phone"`
+	Address      string  `json:"address"`
+	DateOfBirth  string  `json:"dateOfBirth"`
+	Department   string  `json:"department"`
+	DepartmentID string  `json:"departmentId"`
+	Position     string  `json:"position"`
+	JoinDate     string  `json:"joinDate"`
+	Status       string  `json:"status"`
+	Salary       float64 `json:"salary"`
+	UserID       string  `json:"userId,omitempty"`
+	ManagerID    string  `json:"managerId,omitempty"`
 }
 
 // Helper function to convert model to response format
 func (ec *EmployeeController) transformEmployeeResponse(emp models.Employee) EmployeeResponse {
 	departmentName := ""
+	departmentID := ""
 	if emp.Department.Name != "" {
 		departmentName = emp.Department.Name
+		departmentID = strconv.Itoa(int(emp.Department.Model.ID))
 	}
 
 	joinDate := ""
@@ -34,16 +43,38 @@ func (ec *EmployeeController) transformEmployeeResponse(emp models.Employee) Emp
 		joinDate = emp.HireDate.Format("2006-01-02")
 	}
 
+	dateOfBirth := ""
+	if emp.DateOfBirth != nil && !emp.DateOfBirth.IsZero() {
+		dateOfBirth = emp.DateOfBirth.Format("2006-01-02")
+	}
+
+	userID := ""
+	if emp.User != nil {
+		userID = strconv.Itoa(int(emp.User.Model.ID))
+	}
+
+	managerID := ""
+	if emp.ManagerID != nil {
+		managerID = strconv.Itoa(int(*emp.ManagerID))
+	}
+
 	return EmployeeResponse{
-		ID:         strconv.Itoa(int(emp.Model.ID)),
-		Name:       emp.FirstName + " " + emp.LastName,
-		Email:      emp.Email,
-		Phone:      emp.Phone,
-		Department: departmentName,
-		Position:   emp.Position,
-		JoinDate:   joinDate,
-		Status:     emp.Status,
-		Salary:     emp.Salary,
+		ID:           strconv.Itoa(int(emp.Model.ID)),
+		Name:         emp.FirstName + " " + emp.LastName,
+		FirstName:    emp.FirstName,
+		LastName:     emp.LastName,
+		Email:        emp.Email,
+		Phone:        emp.Phone,
+		Address:      emp.Address,
+		DateOfBirth:  dateOfBirth,
+		Department:   departmentName,
+		DepartmentID: departmentID,
+		Position:     emp.Position,
+		JoinDate:     joinDate,
+		Status:       emp.Status,
+		Salary:       emp.Salary,
+		UserID:       userID,
+		ManagerID:    managerID,
 	}
 }
 
