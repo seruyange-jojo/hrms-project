@@ -20,6 +20,12 @@ import { StatsCard, CardWithHeader } from '../../components/Card';
 import Button from '../../components/Button';
 import toast from 'react-hot-toast';
 
+// Import employee-specific modals
+import EmployeeLeaveRequestModal from '../../components/EmployeeLeaveRequestModal';
+import ProfileEditModal from '../../components/ProfileEditModal';
+import PayrollDetailModal from '../../components/PayrollDetailModal';
+import AttendanceCheckModal from '../../components/AttendanceCheckModal';
+
 const EmployeeDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +49,12 @@ const EmployeeDashboard = () => {
     companyAnnouncements: []
   });
   const [myProfile, setMyProfile] = useState(null);
+
+  // Modal states
+  const [leaveRequestModal, setLeaveRequestModal] = useState({ isOpen: false });
+  const [profileEditModal, setProfileEditModal] = useState({ isOpen: false });
+  const [payrollDetailModal, setPayrollDetailModal] = useState({ isOpen: false, payrollId: null });
+  const [attendanceCheckModal, setAttendanceCheckModal] = useState({ isOpen: false, type: null });
 
   // Set page title for clarity
   useEffect(() => {
@@ -242,26 +254,46 @@ const EmployeeDashboard = () => {
   const annualPct = Math.min(100, Math.round((annualUsed / 25) * 100));
   const sickPct = Math.min(100, Math.round((sickUsed / 10) * 100));
 
-  const handleCheckIn = async () => {
-    try {
-      await attendanceAPI.checkIn();
-      toast.success('Checked in successfully');
-      // Refresh data
-      window.location.reload();
-    } catch (error) {
-      toast.error('Failed to check in');
-    }
+  // Refresh data function
+  const refreshData = () => {
+    window.location.reload();
   };
 
-  const handleCheckOut = async () => {
-    try {
-      await attendanceAPI.checkOut();
-      toast.success('Checked out successfully');
-      // Refresh data
-      window.location.reload();
-    } catch (error) {
-      toast.error('Failed to check out');
-    }
+  // Modal handlers
+  const handleOpenLeaveRequest = () => {
+    setLeaveRequestModal({ isOpen: true });
+  };
+
+  const handleCloseLeaveRequest = () => {
+    setLeaveRequestModal({ isOpen: false });
+  };
+
+  const handleOpenProfileEdit = () => {
+    setProfileEditModal({ isOpen: true });
+  };
+
+  const handleCloseProfileEdit = () => {
+    setProfileEditModal({ isOpen: false });
+  };
+
+  const handleOpenPayrollDetail = (payrollId) => {
+    setPayrollDetailModal({ isOpen: true, payrollId });
+  };
+
+  const handleClosePayrollDetail = () => {
+    setPayrollDetailModal({ isOpen: false, payrollId: null });
+  };
+
+  const handleCheckIn = () => {
+    setAttendanceCheckModal({ isOpen: true, type: 'in' });
+  };
+
+  const handleCheckOut = () => {
+    setAttendanceCheckModal({ isOpen: true, type: 'out' });
+  };
+
+  const handleCloseAttendanceCheck = () => {
+    setAttendanceCheckModal({ isOpen: false, type: null });
   };
 
   if (loading) {
@@ -377,7 +409,7 @@ const EmployeeDashboard = () => {
         {/* My Leave Requests */}
         <CardWithHeader
           title="My Leave Requests"
-          action={<Button variant="ghost" size="small" onClick={() => navigate('/leaves/new')}>Request Leave</Button>}
+          action={<Button variant="ghost" size="small" onClick={handleOpenLeaveRequest}>Request Leave</Button>}
           className="hover:shadow-lg transition-shadow duration-200"
         >
           <div className="space-y-3">
@@ -429,7 +461,7 @@ const EmployeeDashboard = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold">{formatCurrency(record.netPay || 0)}</span>
-                    <Button variant="outline" size="small">View</Button>
+                    <Button variant="outline" size="small" onClick={() => handleOpenPayrollDetail(record.ID || record.id)}>View</Button>
                   </div>
                 </div>
               ))
@@ -523,15 +555,22 @@ const EmployeeDashboard = () => {
             <CheckCircle className="w-6 h-6 mb-2" />
             {isCheckedIn ? 'Already Checked In' : 'Mark Attendance'}
           </Button>
-          <Button variant="info" className="h-20 flex-col" onClick={() => navigate('/leaves/new')}>
+          <Button variant="info" className="h-20 flex-col" onClick={handleOpenLeaveRequest}>
             <Calendar className="w-6 h-6 mb-2" />
             Request Leave
           </Button>
-          <Button variant="primary" className="h-20 flex-col" onClick={() => navigate('/my-payroll')}>
+          <Button variant="primary" className="h-20 flex-col" onClick={() => {
+            // Open most recent payroll if available
+            if (recentData.myPayrollRecords.length > 0) {
+              handleOpenPayrollDetail(recentData.myPayrollRecords[0].ID || recentData.myPayrollRecords[0].id);
+            } else {
+              toast.info('No payroll records available yet');
+            }
+          }}>
             <DollarSign className="w-6 h-6 mb-2" />
             View Pay Stub
           </Button>
-          <Button variant="accent" className="h-20 flex-col" onClick={() => navigate('/profile')}>
+          <Button variant="accent" className="h-20 flex-col" onClick={handleOpenProfileEdit}>
             <User className="w-6 h-6 mb-2" />
             Update Profile
           </Button>
@@ -567,6 +606,35 @@ const EmployeeDashboard = () => {
           </div>
         </CardWithHeader>
       )}
+
+      {/* Modals */}
+      <EmployeeLeaveRequestModal 
+        isOpen={leaveRequestModal.isOpen}
+        onClose={handleCloseLeaveRequest}
+        onSuccess={refreshData}
+      />
+
+      <ProfileEditModal 
+        isOpen={profileEditModal.isOpen}
+        onClose={handleCloseProfileEdit}
+        onSuccess={refreshData}
+        employeeData={myProfile}
+      />
+
+      <PayrollDetailModal 
+        isOpen={payrollDetailModal.isOpen}
+        onClose={handleClosePayrollDetail}
+        payrollId={payrollDetailModal.payrollId}
+        employeeData={myProfile}
+      />
+
+      <AttendanceCheckModal 
+        isOpen={attendanceCheckModal.isOpen}
+        onClose={handleCloseAttendanceCheck}
+        onSuccess={refreshData}
+        type={attendanceCheckModal.type}
+        todayAttendance={todayAttendance}
+      />
     </div>
   );
 };
