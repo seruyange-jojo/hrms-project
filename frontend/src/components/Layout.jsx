@@ -38,13 +38,13 @@ const Layout = ({ children }) => {
       name: 'Employees',
       href: '/employees',
       icon: Users,
-      roles: ['admin', 'manager', 'employee']
+      roles: ['admin', 'manager']
     },
     {
       name: 'Departments',
       href: '/departments',
       icon: Building2,
-      roles: ['admin', 'manager', 'employee']
+      roles: ['admin', 'manager']
     },
     {
       name: 'Attendance',
@@ -62,7 +62,7 @@ const Layout = ({ children }) => {
       name: 'Payroll',
       href: '/payroll',
       icon: DollarSign,
-      roles: ['admin', 'manager', 'employee']
+      roles: ['admin']
     }
   ];
 
@@ -91,7 +91,18 @@ const Layout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-base-300">
-            <Link to="/dashboard" className="flex items-center space-x-2 group">
+            <Link 
+              to="/dashboard" 
+              className="flex items-center space-x-2 group"
+              onClick={() => {
+                // Force dashboard navigation and log
+                try { 
+                  console.debug('LOGO_CLICK: navigating to /dashboard'); 
+                  navigate('/dashboard');
+                } catch (e) {}
+                setSidebarOpen(false);
+              }}
+            >
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-focus rounded-lg flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-shadow">
                 H
               </div>
@@ -115,7 +126,11 @@ const Layout = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => {
+                    // debug: log navigation clicks so we can verify link activation in-browser
+                    try { console.debug('NAV_CLICK', item.name, item.href); } catch (e) {}
+                    setSidebarOpen(false);
+                  }}
                   className={`group flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                     current
                       ? 'bg-gradient-to-r from-primary to-primary-focus text-white shadow-md'
