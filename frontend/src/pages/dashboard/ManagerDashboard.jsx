@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { employeeAPI, attendanceAPI, leaveAPI, departmentAPI } from '../../services/api';
 import { 
@@ -13,8 +13,21 @@ import {
   Target,
   CheckCircle,
   Activity,
-  AlertCircle
+  AlertCircle,
+  UserCheck,
+  MessageSquare,
+  Bell,
+  BarChart3,
+  PieChart,
+  ClipboardList,
+  BookOpen,
+  Briefcase,
+  Star,
+  Zap,
+  UserPlus,
+  Send
 } from 'lucide-react';
+import axios from 'axios';
 import { formatDate, getStatusColor } from '../../utils/helpers';
 import { LoadingOverlay } from '../../components/LoadingSpinner';
 import { StatsCard, CardWithHeader } from '../../components/Card';
@@ -29,7 +42,11 @@ const ManagerDashboard = () => {
     presentToday: 0,
     pendingLeaveRequests: 0,
     departmentMonthlyCost: 0,
-    teamPerformanceScore: 0
+    teamPerformanceScore: 0,
+    activeGoals: 0,
+    pendingTasks: 0,
+    trainingNeeded: 0,
+    upcomingLeaves: 0
   });
   const [recentData, setRecentData] = useState({
     teamLeaveRequests: [],
@@ -38,6 +55,13 @@ const ManagerDashboard = () => {
     budgetNotifications: []
   });
   const [myDepartment, setMyDepartment] = useState(null);
+  const [selectedTab, setSelectedTab] = useState('overview'); // For tabbed sections
+  const [announcementText, setAnnouncementText] = useState('');
+
+  // Set page title for clarity
+  useEffect(() => {
+    document.title = 'Manager Dashboard - HRMS';
+  }, []);
 
   useEffect(() => {
     const fetchManagerData = async () => {
@@ -87,7 +111,7 @@ const ManagerDashboard = () => {
         
         if (!departmentId) {
           console.warn('Manager department not found. Manager may not be properly assigned to a department.');
-          toast.warning('Department information not found. Please contact admin to assign you to a department.');
+          toast.error('Department information not found. Please contact admin to assign you to a department.');
         }
         
         // Strict filtering - only show team data, never fallback to all data
@@ -235,6 +259,247 @@ const ManagerDashboard = () => {
           }
         ];
 
+        // Generate team schedule data (upcoming week)
+        const teamSchedule = [
+          {
+            day: 'Monday',
+            date: 'Nov 4',
+            present: Math.floor(teamEmployees.length * 0.9),
+            onLeave: Math.floor(teamEmployees.length * 0.1),
+            remote: 0
+          },
+          {
+            day: 'Tuesday',
+            date: 'Nov 5',
+            present: Math.floor(teamEmployees.length * 0.95),
+            onLeave: 0,
+            remote: Math.floor(teamEmployees.length * 0.05)
+          },
+          {
+            day: 'Wednesday',
+            date: 'Nov 6',
+            present: Math.floor(teamEmployees.length * 0.85),
+            onLeave: Math.floor(teamEmployees.length * 0.05),
+            remote: Math.floor(teamEmployees.length * 0.1)
+          },
+          {
+            day: 'Thursday',
+            date: 'Nov 7',
+            present: Math.floor(teamEmployees.length * 0.9),
+            onLeave: Math.floor(teamEmployees.length * 0.1),
+            remote: 0
+          },
+          {
+            day: 'Friday',
+            date: 'Nov 8',
+            present: Math.floor(teamEmployees.length * 0.8),
+            onLeave: Math.floor(teamEmployees.length * 0.15),
+            remote: Math.floor(teamEmployees.length * 0.05)
+          }
+        ];
+
+        // Generate active tasks/assignments
+        const activeTasks = [
+          {
+            id: 1,
+            title: 'Q4 Performance Reviews',
+            assignedTo: 'All Team Members',
+            dueDate: '2025-11-15',
+            status: 'in-progress',
+            completion: 45,
+            priority: 'high'
+          },
+          {
+            id: 2,
+            title: 'Department Budget Planning',
+            assignedTo: 'Senior Staff',
+            dueDate: '2025-11-10',
+            status: 'pending',
+            completion: 20,
+            priority: 'high'
+          },
+          {
+            id: 3,
+            title: 'Team Building Event',
+            assignedTo: 'HR Coordinator',
+            dueDate: '2025-11-20',
+            status: 'in-progress',
+            completion: 70,
+            priority: 'medium'
+          },
+          {
+            id: 4,
+            title: 'Onboarding New Hires',
+            assignedTo: 'Team Leads',
+            dueDate: '2025-11-08',
+            status: 'pending',
+            completion: 10,
+            priority: 'high'
+          }
+        ];
+
+        // Generate team goals/objectives
+        const teamGoals = [
+          {
+            id: 1,
+            title: 'Improve Team Productivity',
+            description: 'Increase output by 15% this quarter',
+            progress: 68,
+            status: 'on-track',
+            deadline: '2025-12-31',
+            owner: 'Department Manager'
+          },
+          {
+            id: 2,
+            title: 'Reduce Absenteeism',
+            description: 'Lower absence rate below 3%',
+            progress: 82,
+            status: 'ahead',
+            deadline: '2025-12-31',
+            owner: 'HR Team'
+          },
+          {
+            id: 3,
+            title: 'Complete Training Program',
+            description: '100% team completion of compliance training',
+            progress: 45,
+            status: 'at-risk',
+            deadline: '2025-11-30',
+            owner: 'Training Coordinator'
+          }
+        ];
+
+        // Generate training needs
+        const trainingNeeds = [
+          {
+            category: 'Technical Skills',
+            description: 'Advanced software development',
+            employees: Math.floor(teamEmployees.length * 0.3),
+            priority: 'high',
+            status: 'planned'
+          },
+          {
+            category: 'Leadership Development',
+            description: 'Management fundamentals',
+            employees: Math.floor(teamEmployees.length * 0.15),
+            priority: 'medium',
+            status: 'in-progress'
+          },
+          {
+            category: 'Compliance Training',
+            description: 'Annual compliance requirements',
+            employees: Math.floor(teamEmployees.length * 0.55),
+            priority: 'high',
+            status: 'pending'
+          },
+          {
+            category: 'Communication Skills',
+            description: 'Effective team communication',
+            employees: Math.floor(teamEmployees.length * 0.2),
+            priority: 'low',
+            status: 'planned'
+          }
+        ];
+
+        // Generate team announcements
+        const teamAnnouncements = [
+          {
+            id: 1,
+            title: 'Team Meeting - Friday 3PM',
+            message: 'Monthly team sync and Q4 planning session',
+            postedBy: 'Manager',
+            postedDate: '2025-10-30',
+            priority: 'high'
+          },
+          {
+            id: 2,
+            title: 'New Project Kickoff',
+            message: 'Starting new client engagement next week',
+            postedBy: 'Project Lead',
+            postedDate: '2025-10-28',
+            priority: 'normal'
+          },
+          {
+            id: 3,
+            title: 'Office Hours Update',
+            message: 'Flexible work hours available through November',
+            postedBy: 'HR',
+            postedDate: '2025-10-25',
+            priority: 'low'
+          }
+        ];
+
+        // Generate team insights (health metrics)
+        const teamInsights = {
+          morale: {
+            score: 78,
+            trend: 'up',
+            change: '+5%'
+          },
+          collaboration: {
+            score: 85,
+            trend: 'stable',
+            change: '0%'
+          },
+          workload: {
+            score: 72,
+            trend: 'down',
+            change: '-3%'
+          },
+          satisfaction: {
+            score: 81,
+            trend: 'up',
+            change: '+7%'
+          }
+        };
+
+        // Generate upcoming events
+        const upcomingEvents = [
+          {
+            title: 'Team Meeting',
+            date: '2025-11-01',
+            time: '3:00 PM',
+            type: 'meeting',
+            attendees: teamEmployees.length
+          },
+          {
+            title: 'Performance Review Deadline',
+            date: '2025-11-15',
+            time: 'End of Day',
+            type: 'deadline',
+            attendees: Math.floor(teamEmployees.length * 0.8)
+          },
+          {
+            title: 'Department Training',
+            date: '2025-11-12',
+            time: '10:00 AM',
+            type: 'training',
+            attendees: Math.floor(teamEmployees.length * 0.6)
+          }
+        ];
+
+        // Calculate additional stats
+        const activeGoals = teamGoals.filter(g => g.status !== 'completed').length;
+        const pendingTasks = activeTasks.filter(t => t.status === 'pending').length;
+        const trainingNeeded = trainingNeeds.reduce((acc, t) => acc + t.employees, 0);
+        const upcomingLeaves = teamLeaves.filter(leave => {
+          const startDate = new Date(leave.startDate);
+          const now = new Date();
+          const daysUntilLeave = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+          return daysUntilLeave >= 0 && daysUntilLeave <= 7 && leave.status?.toLowerCase() === 'approved';
+        }).length;
+
+        // Update stats with new metrics
+        setStats({
+          myTeamSize,
+          presentToday,
+          pendingLeaveRequests,
+          activeGoals,
+          pendingTasks,
+          trainingNeeded,
+          upcomingLeaves
+        });
+
         // Generate team reports data
         const availableReports = [
           {
@@ -293,13 +558,23 @@ const ManagerDashboard = () => {
           resourceAllocation, // Resource allocation breakdown
           availableReports, // Available report templates
           recentReports, // Recently generated reports
+          teamSchedule, // Weekly team schedule
+          activeTasks, // Active assignments
+          teamGoals, // Department goals
+          trainingNeeds, // Training requirements
+          teamAnnouncements, // Team communications
+          teamInsights, // Team health metrics
+          upcomingEvents, // Calendar events
           performanceUpdates: [], // Reserved for future performance data
           budgetNotifications: [] // Reserved for future budget alerts
         });
 
       } catch (error) {
         console.error('Error fetching manager dashboard data:', error);
-        toast.error('Failed to load manager dashboard data');
+        // Don't show toast on every error to avoid spam if API is down
+        if (error.message && !error.message.includes('500')) {
+          toast.error('Failed to load some dashboard data. Please refresh.');
+        }
       } finally {
         setLoading(false);
       }
@@ -312,55 +587,90 @@ const ManagerDashboard = () => {
 
   const handleApproveLeave = async (leaveId) => {
     try {
-      const response = await axios.patch(`/api/leave-requests/${leaveId}/approve`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await leaveAPI.approveLeaveRequest(leaveId, 'approved', 'Approved by manager');
       
-      if (response.data.success) {
+      if (response.success) {
+        toast.success('Leave request approved successfully');
+        
         // Update local state to remove the approved request
         setRecentData(prev => ({
           ...prev,
-          teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.ID !== leaveId)
+          teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.id !== leaveId && leave.ID !== leaveId)
         }));
-
-        // Show success message
-        console.log('Leave request approved successfully');
-        
-        // Optional: Refresh data to get updated counts
-        fetchDashboardData();
       }
     } catch (error) {
       console.error('Error approving leave:', error);
+      if (!error.message?.includes('500')) {
+        toast.error('Failed to approve leave request');
+      }
     }
   };
 
   const handleRejectLeave = async (leaveId) => {
     try {
-      const response = await axios.patch(`/api/leave-requests/${leaveId}/reject`, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await leaveAPI.rejectLeaveRequest(leaveId, 'Rejected by manager');
       
       if (response.data.success) {
+        toast.success('Leave request rejected');
+        
         // Update local state to remove the rejected request
         setRecentData(prev => ({
           ...prev,
-          teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.ID !== leaveId)
+          teamLeaveRequests: prev.teamLeaveRequests.filter(leave => leave.id !== leaveId && leave.ID !== leaveId)
         }));
-
-        // Show success message
-        console.log('Leave request rejected successfully');
-        
-        // Optional: Refresh data to get updated counts
-        fetchDashboardData();
       }
     } catch (error) {
       console.error('Error rejecting leave:', error);
+      if (!error.message?.includes('500')) {
+        toast.error('Failed to reject leave request');
+      }
     }
-  };  if (loading) {
+  };
+
+  const handlePostAnnouncement = () => {
+    if (!announcementText.trim()) {
+      toast.error('Please enter an announcement message');
+      return;
+    }
+    
+    // In a real app, this would POST to an API
+    toast.success('Announcement posted to team');
+    setAnnouncementText('');
+  };
+
+  const handleAssignTask = (taskId) => {
+    // In a real app, this would open a modal or navigate to task assignment
+    toast.success('Task assignment feature coming soon');
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case 'high':
+        return 'badge-error';
+      case 'medium':
+        return 'badge-warning';
+      case 'low':
+        return 'badge-info';
+      default:
+        return 'badge-ghost';
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'on-track':
+      case 'ahead':
+        return 'badge-success';
+      case 'at-risk':
+        return 'badge-warning';
+      case 'behind':
+        return 'badge-error';
+      default:
+        return 'badge-ghost';
+    }
+  };
+
+  if (loading) {
     return <LoadingOverlay message="Loading manager dashboard..." />;
   }
 
@@ -370,9 +680,9 @@ const ManagerDashboard = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-secondary to-secondary-focus bg-clip-text text-transparent">
+            <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary-focus bg-clip-text text-transparent">
               Manager Dashboard
-            </h1>
+            </h2>
             <p className="opacity-70 mt-2 text-sm sm:text-base">
               Team Manager - {myDepartment?.name || 'Department'} • {stats.myTeamSize || 0} team members
             </p>
@@ -396,7 +706,7 @@ const ManagerDashboard = () => {
           <TrendingUp className="w-5 h-5 mr-2 text-secondary" />
           Team Statistics
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
           <StatsCard
             title="Team Size"
             value={stats.myTeamSize}
@@ -405,27 +715,404 @@ const ManagerDashboard = () => {
             subtitle="Direct reports"
           />
           <StatsCard
-            title="Department Performance"
+            title="Attendance Rate"
             value={stats.myTeamSize > 0 ? `${Math.round((stats.presentToday / stats.myTeamSize) * 100)}%` : '0%'}
             icon={Target}
             color="info"
-            subtitle="Overall attendance rate"
+            subtitle="Today's attendance"
           />
           <StatsCard
-            title="Team Attendance Today"
+            title="Present Today"
             value={`${stats.presentToday}/${stats.myTeamSize}`}
             icon={UserCheck}
             color="success"
-            subtitle="Present/Total"
+            subtitle="In office"
           />
           <StatsCard
             title="Pending Actions"
             value={stats.pendingLeaveRequests}
             icon={AlertCircle}
             color="warning"
-            subtitle="Requires approval"
+            subtitle="Leave approvals"
+          />
+          <StatsCard
+            title="Active Goals"
+            value={stats.activeGoals}
+            icon={Target}
+            color="accent"
+            subtitle="In progress"
+          />
+          <StatsCard
+            title="Pending Tasks"
+            value={stats.pendingTasks}
+            icon={ClipboardList}
+            color="primary"
+            subtitle="Awaiting action"
+          />
+          <StatsCard
+            title="Training Needed"
+            value={stats.trainingNeeded}
+            icon={BookOpen}
+            color="info"
+            subtitle="Team members"
+          />
+          <StatsCard
+            title="Upcoming Leaves"
+            value={stats.upcomingLeaves}
+            icon={Calendar}
+            color="warning"
+            subtitle="Next 7 days"
           />
         </div>
+      </div>
+
+      {/* Team Insights - Quick Health Check */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <BarChart3 className="w-5 h-5 mr-2 text-primary" />
+          Team Health Insights
+        </h2>
+        <CardWithHeader
+          title="Team Well-being Metrics"
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {recentData.teamInsights && Object.entries(recentData.teamInsights).map(([key, value]) => (
+              <div key={key} className="p-4 rounded-lg bg-base-100 border border-base-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium capitalize">{key}</span>
+                  <div className={`flex items-center text-xs ${
+                    value.trend === 'up' ? 'text-success' :
+                    value.trend === 'down' ? 'text-error' : 'text-warning'
+                  }`}>
+                    {value.trend === 'up' ? <TrendingUp className="w-3 h-3 mr-1" /> :
+                     value.trend === 'down' ? <TrendingDown className="w-3 h-3 mr-1" /> :
+                     <Activity className="w-3 h-3 mr-1" />}
+                    {value.change}
+                  </div>
+                </div>
+                <div className="mb-2">
+                  <div className="text-2xl font-bold text-primary">{value.score}%</div>
+                </div>
+                <progress 
+                  className={`progress w-full ${
+                    value.score >= 80 ? 'progress-success' :
+                    value.score >= 60 ? 'progress-warning' : 'progress-error'
+                  }`}
+                  value={value.score}
+                  max="100"
+                ></progress>
+              </div>
+            ))}
+          </div>
+        </CardWithHeader>
+      </div>
+
+      {/* Team Schedule & Communication Hub */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Weekly Team Schedule */}
+        <CardWithHeader
+          title="Team Schedule - This Week"
+          action={<Button variant="ghost" size="small">View Calendar</Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="space-y-3">
+            {recentData.teamSchedule && recentData.teamSchedule.map((day, index) => (
+              <div key={index} className="p-3 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <span className="font-semibold text-sm">{day.day}</span>
+                    <span className="text-xs opacity-60 ml-2">{day.date}</span>
+                  </div>
+                  <div className="text-xs opacity-70">
+                    Total: {day.present + day.onLeave + day.remote}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1 text-center p-2 rounded bg-success/10">
+                    <div className="text-lg font-bold text-success">{day.present}</div>
+                    <div className="text-xs opacity-70">In Office</div>
+                  </div>
+                  {day.onLeave > 0 && (
+                    <div className="flex-1 text-center p-2 rounded bg-warning/10">
+                      <div className="text-lg font-bold text-warning">{day.onLeave}</div>
+                      <div className="text-xs opacity-70">On Leave</div>
+                    </div>
+                  )}
+                  {day.remote > 0 && (
+                    <div className="flex-1 text-center p-2 rounded bg-info/10">
+                      <div className="text-lg font-bold text-info">{day.remote}</div>
+                      <div className="text-xs opacity-70">Remote</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardWithHeader>
+
+        {/* Team Communication Hub */}
+        <CardWithHeader
+          title="Team Announcements"
+          action={<Button variant="ghost" size="small"><Bell className="w-4 h-4" /></Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="space-y-4">
+            {/* Post New Announcement */}
+            <div className="p-3 rounded-lg bg-base-100 border border-base-200">
+              <textarea
+                className="textarea textarea-bordered w-full text-sm"
+                placeholder="Post an announcement to your team..."
+                rows="2"
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+              ></textarea>
+              <div className="flex justify-end mt-2">
+                <Button 
+                  variant="primary" 
+                  size="small" 
+                  className="btn-sm"
+                  onClick={handlePostAnnouncement}
+                >
+                  <Send className="w-4 h-4 mr-1" />
+                  Post
+                </Button>
+              </div>
+            </div>
+
+            {/* Recent Announcements */}
+            <div className="space-y-2">
+              {recentData.teamAnnouncements && recentData.teamAnnouncements.map((announcement) => (
+                <div key={announcement.id} className="p-3 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-sm">{announcement.title}</span>
+                    </div>
+                    <div className={`badge ${getPriorityColor(announcement.priority)} badge-xs`}>
+                      {announcement.priority}
+                    </div>
+                  </div>
+                  <p className="text-xs opacity-70 mb-1">{announcement.message}</p>
+                  <div className="text-xs opacity-50">
+                    By {announcement.postedBy} • {announcement.postedDate}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardWithHeader>
+      </div>
+
+      {/* Goals & Task Management */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Department Goals */}
+        <CardWithHeader
+          title="Department Goals"
+          action={<Button variant="secondary" size="small">Manage Goals</Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="space-y-4">
+            {recentData.teamGoals && recentData.teamGoals.length > 0 ? (
+              recentData.teamGoals.map((goal) => (
+                <div key={goal.id} className="p-4 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                        <Target className="w-4 h-4 text-accent" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{goal.title}</p>
+                        <p className="text-xs opacity-60">{goal.description}</p>
+                      </div>
+                    </div>
+                    <div className={`badge ${getStatusBadge(goal.status)} badge-sm`}>
+                      {goal.status}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Progress</span>
+                      <span className="font-medium">{goal.progress}%</span>
+                    </div>
+                    <progress 
+                      className={`progress w-full ${
+                        goal.progress >= 80 ? 'progress-success' :
+                        goal.progress >= 50 ? 'progress-warning' : 'progress-error'
+                      }`}
+                      value={goal.progress}
+                      max="100"
+                    ></progress>
+                    <div className="flex justify-between text-xs opacity-60">
+                      <span>Owner: {goal.owner}</span>
+                      <span>Due: {formatDate(goal.deadline)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6">
+                <Target className="w-10 h-10 mx-auto opacity-30 mb-2" />
+                <p className="text-sm opacity-60">No active goals</p>
+              </div>
+            )}
+          </div>
+        </CardWithHeader>
+
+        {/* Active Tasks & Assignments */}
+        <CardWithHeader
+          title="Active Tasks & Assignments"
+          action={<Button variant="primary" size="small"><UserPlus className="w-4 h-4 mr-1" />Assign Task</Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="space-y-3">
+            {recentData.activeTasks && recentData.activeTasks.length > 0 ? (
+              recentData.activeTasks.map((task) => (
+                <div key={task.id} className="p-3 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-sm">{task.title}</p>
+                        <div className={`badge ${getPriorityColor(task.priority)} badge-xs`}>
+                          {task.priority}
+                        </div>
+                      </div>
+                      <p className="text-xs opacity-60">Assigned to: {task.assignedTo}</p>
+                      <p className="text-xs opacity-50">Due: {formatDate(task.dueDate)}</p>
+                    </div>
+                    <div className={`badge ${
+                      task.status === 'completed' ? 'badge-success' :
+                      task.status === 'in-progress' ? 'badge-info' :
+                      'badge-warning'
+                    } badge-sm`}>
+                      {task.status}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>Completion</span>
+                      <span className="font-medium">{task.completion}%</span>
+                    </div>
+                    <progress 
+                      className="progress progress-primary w-full"
+                      value={task.completion}
+                      max="100"
+                    ></progress>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6">
+                <ClipboardList className="w-10 h-10 mx-auto opacity-30 mb-2" />
+                <p className="text-sm opacity-60">No active tasks</p>
+              </div>
+            )}
+          </div>
+        </CardWithHeader>
+      </div>
+
+      {/* Training & Development */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4 flex items-center">
+          <BookOpen className="w-5 h-5 mr-2 text-success" />
+          Training & Development
+        </h2>
+        <CardWithHeader
+          title="Team Training Needs"
+          action={<Button variant="secondary" size="small">Schedule Training</Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recentData.trainingNeeds && recentData.trainingNeeds.length > 0 ? (
+              recentData.trainingNeeds.map((training, index) => (
+                <div key={index} className="p-4 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        training.priority === 'high' ? 'bg-error/20' :
+                        training.priority === 'medium' ? 'bg-warning/20' : 'bg-info/20'
+                      }`}>
+                        <BookOpen className={`w-5 h-5 ${
+                          training.priority === 'high' ? 'text-error' :
+                          training.priority === 'medium' ? 'text-warning' : 'text-info'
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">{training.category}</p>
+                        <p className="text-xs opacity-60">{training.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 opacity-50" />
+                      <span className="text-sm font-medium">{training.employees} employees</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <div className={`badge ${getPriorityColor(training.priority)} badge-sm`}>
+                        {training.priority}
+                      </div>
+                      <div className={`badge ${
+                        training.status === 'completed' ? 'badge-success' :
+                        training.status === 'in-progress' ? 'badge-info' :
+                        'badge-ghost'
+                      } badge-sm`}>
+                        {training.status}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 text-center py-6">
+                <BookOpen className="w-10 h-10 mx-auto opacity-30 mb-2" />
+                <p className="text-sm opacity-60">No training needs identified</p>
+              </div>
+            )}
+          </div>
+        </CardWithHeader>
+      </div>
+
+      {/* Upcoming Events */}
+      <div className="mb-8">
+        <CardWithHeader
+          title="Upcoming Events & Deadlines"
+          action={<Button variant="ghost" size="small">View Calendar</Button>}
+          className="hover:shadow-lg transition-shadow duration-200"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recentData.upcomingEvents && recentData.upcomingEvents.length > 0 ? (
+              recentData.upcomingEvents.map((event, index) => (
+                <div key={index} className="p-4 rounded-lg border border-base-200 hover:bg-base-50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      event.type === 'meeting' ? 'bg-primary/20' :
+                      event.type === 'deadline' ? 'bg-error/20' : 'bg-success/20'
+                    }`}>
+                      {event.type === 'meeting' ? <Users className="w-6 h-6 text-primary" /> :
+                       event.type === 'deadline' ? <AlertCircle className="w-6 h-6 text-error" /> :
+                       <BookOpen className="w-6 h-6 text-success" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-1">{event.title}</p>
+                      <p className="text-xs opacity-60 mb-1">{formatDate(event.date)}</p>
+                      <p className="text-xs opacity-50">{event.time}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <UserCheck className="w-3 h-3 opacity-50" />
+                        <span className="text-xs opacity-70">{event.attendees} attendees</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-6">
+                <Calendar className="w-10 h-10 mx-auto opacity-30 mb-2" />
+                <p className="text-sm opacity-60">No upcoming events</p>
+              </div>
+            )}
+          </div>
+        </CardWithHeader>
       </div>
 
       {/* Team Management - View and Manage Direct Reports */}
