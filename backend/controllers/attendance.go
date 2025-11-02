@@ -85,18 +85,18 @@ func (ac *AttendanceController) GetAttendance(c *gin.Context) {
 	case "manager":
 		// Managers can only see their department's attendance
 		var user models.User
-		if err := ac.db.Preload("Employee").First(&user, userID).Error; err != nil {
+		if err := ac.db.Preload("Employee.Department").First(&user, userID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
 
-		if user.Employee == nil {
+		if user.EmployeeID == nil || user.Employee == nil {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Manager must be associated with an employee record"})
 			return
 		}
 
 		// Find all employees in the same department
-		if err := query.Joins("JOIN employees ON attendance.employee_id = employees.id").
+		if err := query.Joins("JOIN employees ON attendances.employee_id = employees.id").
 			Where("employees.department_id = ?", user.Employee.DepartmentID).
 			Find(&attendance).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch department attendance"})
@@ -106,17 +106,17 @@ func (ac *AttendanceController) GetAttendance(c *gin.Context) {
 	case "employee":
 		// Employees can only see their own attendance
 		var user models.User
-		if err := ac.db.Preload("Employee").First(&user, userID).Error; err != nil {
+		if err := ac.db.First(&user, userID).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
 
-		if user.Employee == nil {
+		if user.EmployeeID == nil {
 			c.JSON(http.StatusForbidden, gin.H{"error": "User must be associated with an employee record"})
 			return
 		}
 
-		if err := query.Where("employee_id = ?", user.Employee.ID).Find(&attendance).Error; err != nil {
+		if err := query.Where("employee_id = ?", *user.EmployeeID).Find(&attendance).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch personal attendance"})
 			return
 		}
@@ -321,5 +321,161 @@ func (ac *AttendanceController) GetDepartmentAttendanceReport(c *gin.Context) {
 		"success": true,
 		"data":    attendanceReport,
 		"message": "Department attendance report generated successfully",
+	})
+}
+
+// CheckIn - Employee checks in for the day
+func (ac *AttendanceController) CheckIn(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	// Get user's employee record
+	var user models.User
+	if err := ac.db.Preload("Employee").First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "User not found",
+		})
+		return
+	}
+
+	if user.Employee == nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "User must be associated with an employee record",
+		})
+		return
+	}
+
+	// Check if already checked in today
+	today := time.Now().Format("2006-01-02")
+	var existingAttendance models.Attendance
+	err := ac.db.Where("employee_id = ? AND DATE(date) = ?", user.Employee.ID, today).First(&existingAttendance).Error
+
+	if err == nil {
+		// Record exists
+		if existingAttendance.CheckIn != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "You have already checked in today",
+				"data":    existingAttendance,
+			})
+			return
+		}
+	}
+
+	// Create or update attendance record
+	now := time.Now()
+	attendance := models.Attendance{
+		EmployeeID: user.Employee.ID,
+		Date:       now,
+		CheckIn:    &now,
+		Status:     "present",
+	}
+
+	// Determine if late (after 9:00 AM)
+	if now.Hour() > 9 || (now.Hour() == 9 && now.Minute() > 0) {
+		attendance.Status = "late"
+	}
+
+	if err := ac.db.Create(&attendance).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to check in",
+		})
+		return
+	}
+
+	// Load employee data for response
+	ac.db.Preload("Employee").First(&attendance, attendance.ID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    attendance,
+		"message": "Checked in successfully",
+	})
+}
+
+// CheckOut - Employee checks out for the day
+func (ac *AttendanceController) CheckOut(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	// Get user's employee record
+	var user models.User
+	if err := ac.db.Preload("Employee").First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "User not found",
+		})
+		return
+	}
+
+	if user.Employee == nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "User must be associated with an employee record",
+		})
+		return
+	}
+
+	// Find today's attendance record
+	today := time.Now().Format("2006-01-02")
+	var attendance models.Attendance
+	err := ac.db.Where("employee_id = ? AND DATE(date) = ?", user.Employee.ID, today).First(&attendance).Error
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "No check-in record found for today. Please check in first.",
+		})
+		return
+	}
+
+	if attendance.CheckIn == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "No check-in record found. Please check in first.",
+		})
+		return
+	}
+
+	if attendance.CheckOut != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "You have already checked out today",
+			"data":    attendance,
+		})
+		return
+	}
+
+	// Update checkout time
+	now := time.Now()
+	attendance.CheckOut = &now
+
+	// Calculate working hours
+	if attendance.CheckIn != nil {
+		duration := now.Sub(*attendance.CheckIn)
+		attendance.WorkingHours = duration.Hours()
+
+		// Update status based on hours worked
+		if attendance.WorkingHours < 4 {
+			attendance.Status = "half-day"
+		}
+	}
+
+	if err := ac.db.Save(&attendance).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Failed to check out",
+		})
+		return
+	}
+
+	// Load employee data for response
+	ac.db.Preload("Employee").First(&attendance, attendance.ID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    attendance,
+		"message": "Checked out successfully",
 	})
 }
