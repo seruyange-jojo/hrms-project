@@ -11,6 +11,9 @@ import Layout from './components/Layout';
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import MyPayroll from './pages/MyPayroll';
+import LeaveRequestNew from './pages/LeaveRequestNew';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -55,7 +58,7 @@ function App() {
             
             {/* Employees routes */}
             <Route path="/employees" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="manager">
                 <Layout>
                   <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Employees</h1>
@@ -71,7 +74,7 @@ function App() {
             
             {/* Departments routes */}
             <Route path="/departments" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="manager">
                 <Layout>
                   <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Departments</h1>
@@ -116,10 +119,19 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
+
+            {/* New Leave request form */}
+            <Route path="/leaves/new" element={
+              <ProtectedRoute>
+                <Layout>
+                  <LeaveRequestNew />
+                </Layout>
+              </ProtectedRoute>
+            } />
             
             {/* Payroll routes */}
             <Route path="/payroll" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="admin">
                 <Layout>
                   <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Payroll</h1>
@@ -129,6 +141,24 @@ function App() {
                       </div>
                     </div>
                   </div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            {/* Employee's payslips */}
+            <Route path="/my-payroll" element={
+              <ProtectedRoute>
+                <Layout>
+                  <MyPayroll />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            {/* Profile route */}
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout>
+                  <Profile />
                 </Layout>
               </ProtectedRoute>
             } />
