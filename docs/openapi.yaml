@@ -1,0 +1,434 @@
+openapi: 3.1.0
+info:
+  title: HRMS API
+  version: "1.0.0"
+  description: OpenAPI spec for the HRMS project (subset covering implemented endpoints)
+servers:
+  - url: /api
+
+paths:
+  /auth/login:
+    post:
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      summary: Logout (stateless)
+      responses:
+        '200':
+          description: Logged out
+
+  /users/me:
+    get:
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users:
+    get:
+      summary: List users
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Created
+
+  /employees:
+    get:
+      summary: List employees
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Employees list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+    post:
+      summary: Create employee
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '201':
+          description: Created
+
+  /employees/{id}:
+    get:
+      summary: Get employee
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Employee detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+    put:
+      summary: Update employee
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      summary: Delete employee
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Deleted
+
+  /departments:
+    get:
+      summary: List departments
+      responses:
+        '200':
+          description: List
+    post:
+      summary: Create department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentCreate'
+      responses:
+        '201':
+          description: Created
+
+  /attendance:
+    get:
+      summary: Query attendance
+      parameters:
+        - in: query
+          name: employee_id
+          schema:
+            type: integer
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Attendance records
+    post:
+      summary: Create attendance / checkin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceCreate'
+      responses:
+        '201':
+          description: Created
+
+  /attendance/checkin:
+    post:
+      summary: Check-in for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Checked in
+
+  /attendance/checkout:
+    post:
+      summary: Check-out for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Checked out
+
+  /leave:
+    get:
+      summary: Query leave requests
+      responses:
+        '200':
+          description: List
+    post:
+      summary: Submit leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveCreate'
+      responses:
+        '201':
+          description: Created
+
+  /leave/{id}/approve:
+    post:
+      summary: Approve leave (manager/admin)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                comments:
+                  type: string
+      responses:
+        '200':
+          description: Approved
+
+  /leave/{id}/decline:
+    post:
+      summary: Decline leave (manager/admin)
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comments:
+                  type: string
+      responses:
+        '200':
+          description: Declined
+
+  /payroll:
+    get:
+      summary: Query payroll records
+      parameters:
+        - in: query
+          name: employee_id
+          schema:
+            type: integer
+        - in: query
+          name: period
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payroll list
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+
+    UserCreate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        departmentId:
+          type: integer
+        managerId:
+          type: integer
+        hireDate:
+          type: string
+          format: date
+
+    EmployeeCreate:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserCreate'
+        firstName:
+          type: string
+        lastName:
+          type: string
+        department_id:
+          type: integer
+
+    DepartmentCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    AttendanceCreate:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+        type:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    LeaveCreate:
+      type: object
+      required: [start_date, end_date, type]
+      properties:
+        employee_id:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        type:
+          type: string
+        reason:
+          type: string
+
+    PayrollRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        gross:
+          type: number
+        net:
+          type: number
