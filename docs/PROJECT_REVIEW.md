@@ -44,9 +44,11 @@ Updated: 2025-11-03
 
 - Week 3: Add basic monitoring/health endpoints and a production-ready Dockerfile or Helm chart.
 
+#
 ---
 Planned action: fix the remaining markdown lint issues across the documentation, stage and commit the changes in a single atomic commit; approval will be requested before pushing to any remote.
-# Project Review - HRMS
+
+## Project Review - HRMS
 
 Last updated: 2025-11-03
 
