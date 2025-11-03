@@ -1,65 +1,77 @@
-# 🏢 HRMS - Human Resource Management System
+# HRMS Project
 
-A modern, full-stack Human Resource Management System built with **React TypeScript** frontend and **Go** backend, featuring comprehensive employee management, department organization, attendance tracking, and leave management.
+Updated: 2025-11-03
 
-![HRMS Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
-![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%2B%20TypeScript-blue)
-![Backend](https://img.shields.io/badge/Backend-Go%20%2B%20Gin-00ADD8)
-![Database](https://img.shields.io/badge/Database-PostgreSQL-336791)
+## Summary
 
-## 🚀 **Current Status: Fully Integrated & Production Ready**
+This is a lightweight HR Management System (HRMS) sample project with:
 
-✅ **Backend API** - Go + Gin + PostgreSQL (Dockerized)  
-✅ **Frontend UI** - React 18 + TypeScript + Tailwind CSS  
-✅ **Authentication** - JWT-based with role management  
-✅ **Database** - PostgreSQL with migrations and seed data  
-✅ **Integration** - Frontend connected to real backend API  
-✅ **Docker Support** - Containerized backend services  
-✅ **Production Ready** - Error handling, validation, security  
+- React + Vite frontend (Tailwind CSS + DaisyUI)
 
-## 🏗️ **Architecture**
+- Go backend using Gin and GORM
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend│    │   Go Backend    │    │   PostgreSQL    │
-│   (Port 5173)   │───▶│   (Port 8080)   │───▶│   (Port 5433)   │
-│   npm run dev   │    │   Docker        │    │   Docker        │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+- PostgreSQL database (development via Docker Compose)
 
-## 🚦 **Quick Start**
+Current status: Core Employee, Manager, and Admin dashboards are implemented. Key flows (authentication, leave requests, approvals, attendance, payroll viewing) are functional in the local development environment.
 
-### **1. Start Backend Services**
+## Tech stack
+
+<!-- Condensed README: keep quickstart, stack, and links. -->
+
+## Project overview
+
+Last updated: 2025-11-03
+
+Lightweight Human Resource Management System (HRMS) with a React (Vite) frontend and a Go (Gin + GORM) backend. Development uses PostgreSQL via Docker Compose.
+
+Key implemented areas:
+
+- Authentication (JWT)
+- Employee: attendance, leave requests, payroll viewing, profile edit
+- Manager: leave approvals, team overview
+- Admin: employees & departments CRUD
+
+## Quick start (development)
+
+1. Start backend and Postgres (from repo root):
+
 ```bash
-cd /home/jojo/Desktop/Code/software-project
-docker compose up -d --build
+cd backend
+docker-compose up --build -d
 ```
 
-### **2. Start Frontend Development**
+2. Start frontend in a separate terminal:
+
 ```bash
-cd /home/jojo/Desktop/Code/software-project/frontend
+cd frontend
+npm install
 npm run dev
 ```
 
-### **3. Access the Application**
-- **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:8080  
-- **Health Check:** http://localhost:8080/health
+Open the URL shown by Vite (default [http://localhost:5173](http://localhost:5173)).
 
-## 🔑 **Demo Users & Login Credentials**
+## Important files & links
 
-The system comes pre-seeded with demo users for each role:
+- `backend/` — Go API (controllers, models, routes)
+- `frontend/` — React app (components, pages, services)
+- `API.md`, `openapi.yaml` — API documentation
+- `SDD.md`, `SRS.md`, `SETUP_GUIDE.md` — system & setup docs
 
-| Role | Email | Password | Permissions |
-|------|-------|----------|-------------|
-| **Admin** | `admin@hrms.com` | `admin123` | Full system access, user management |
-| **HR** | `hr@hrms.com` | `hr123` | Employee & department management |
-| **Manager** | `manager@hrms.com` | `manager123` | Team management, approvals |
-| **Employee** | `employee@hrms.com` | `employee123` | Personal dashboard, leave requests |
+## Dev notes
 
-## 👥 **Creating Additional Users**
+- Backend config: see `backend/config/config.go` for env keys.
+- Frontend: set `VITE_API_BASE_URL` to the backend API URL in development.
 
-### **Via API (Recommended)**
+## Next steps
+
+- Add automated tests and CI
+- Diagrams are embedded in `SDD.md` (inlined PlantUML/ASCII snippets)
+- Implement server-side payslip generation (planned)
+
+---
+
+Next steps: fix remaining markdown-lint warnings across docs and (optionally) re-run PlantUML rendering to generate PNGs and embed them in `SDD.md`. Please indicate whether you'd like diagrams generated now or after the lint pass.
+
 
 **Create Admin User:**
 ```bash
